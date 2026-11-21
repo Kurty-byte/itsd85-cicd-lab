@@ -1,0 +1,46 @@
+name: CI-CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, deploy]
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      APP_VERSION: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose -p cicd up -d --build --remove-orphans
+      - name: Health check
+        run: |
+          for i in $(seq 1 15); do
+            if curl -fs http://localhost:8080/health | grep -q "$APP_VERSION"; then
+              echo "Deployed $APP_VERSION"; exit 0
+            fi
+            sleep 2
+          done
+          docker compose -p cicd logs --tail 50
+          exit 1
+      - if: always()
+        run: docker image prune -f

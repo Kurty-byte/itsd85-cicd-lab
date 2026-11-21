@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: cicd-app:${APP_VERSION:-dev}
+    container_name: cicd-app
+    ports:
+      - "8080:3000"
+    restart: unless-stopped
