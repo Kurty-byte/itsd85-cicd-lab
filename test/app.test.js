@@ -1,7 +1,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { app, add } from "../src/app.js";
+import { app, add, sub } from "../src/app.js";
 
 let server;
 let baseUrl;
@@ -18,6 +18,10 @@ test("add() sums two numbers", () => {
   assert.equal(add(2, 3), 5);
 });
 
+test("sub() difference two numbers", () => {
+  assert.equal(sub(3, 2), 1);
+});
+
 test("GET /health returns ok", async () => {
   const res = await fetch(`${baseUrl}/health`);
   assert.equal(res.status, 200);
@@ -27,5 +31,10 @@ test("GET /health returns ok", async () => {
 
 test("GET /api/add rejects non-numbers", async () => {
   const res = await fetch(`${baseUrl}/api/add?a=x&b=2`);
+  assert.equal(res.status, 400);
+});
+
+test("GET /api/sub rejects non-numbers", async () => {
+  const res = await fetch(`${baseUrl}/api/subtract?a=x&b=2`);
   assert.equal(res.status, 400);
 });
